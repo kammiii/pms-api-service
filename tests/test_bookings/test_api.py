@@ -31,7 +31,7 @@ def clear_overrides():
 
 class TestPMSBookingsApi:
     @pytest.fixture
-    def override_pms_client(self):
+    def pms_client(self):
       def _override(response=None, error=None):
           async def _get_pms_client():
               yield ApiClientMock(response=response, error=error)
@@ -50,30 +50,30 @@ class TestPMSBookingsApi:
         }
 
     @pytest.fixture
-    def resp(self,booking):
+    def resp(self, booking):
         return httpx.Response(
             status_code=200,
-            json=[booking],
+            json={"bookings": [booking]},
             request=httpx.Request("GET", "/api/bookings"),
         )
 
     @pytest.mark.asyncio
-    async def test_success_override(self, override_pms_client, client, booking, resp):
-        override_pms_client(response=resp)
-        resp = client.get("/api/integrations/pms/bookings/")
+    async def test_success_override(self, pms_client, private_client, booking, resp):
+        pms_client(response=resp)
+        resp = private_client.get("/api/integrations/pms/bookings/")
         assert resp.status_code == status.HTTP_200_OK
         assert resp.json() == [booking]
 
     @pytest.mark.asyncio
-    async def test_502_on_pms_error(self, client, override_pms_client):
-        override_pms_client(error=PMSApiError("upstream down"))
-        resp = client.get("/api/integrations/pms/bookings/")
+    async def test_502_on_pms_error(self, private_client, pms_client):
+        pms_client(error=PMSApiError("upstream down"))
+        resp = private_client.get("/api/integrations/pms/bookings/")
         assert resp.status_code == status.HTTP_502_BAD_GATEWAY
         assert resp.json()["detail"] == "upstream down"
 
     @pytest.mark.asyncio
-    async def test_500_on_unexpected_exception(self, client, override_pms_client):
-        override_pms_client(error=RuntimeError("boom"))
-        resp = client.get("/api/integrations/pms/bookings/")
+    async def test_500_on_unexpected_exception(self, private_client, pms_client):
+        pms_client(error=RuntimeError("boom"))
+        resp = private_client.get("/api/integrations/pms/bookings/")
         assert resp.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         assert resp.json()["detail"] == "Internal Server Error"
