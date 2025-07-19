@@ -1,0 +1,25 @@
+version: "3.8"
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      PMS_BASE_URL: "http://mock-pms:9000"
+    depends_on:
+      - mock-pms
+
+  mock-pms:
+    image: python:3.10-slim
+    command: >
+      sh -c "pip install fastapi uvicorn && 
+             uvicorn infra.mock_pms:app --host 0.0.0.0 --port 9000"
+    volumes:
+      - ./src/infra/mock_pms.py:/app/infra/mock_pms.py
+    working_dir: /app
+    ports:
+      - "9000:9000"
+    env_file:
+      - .env.mock
