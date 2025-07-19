@@ -1,7 +1,12 @@
 from fastapi import FastAPI
 from src.api.bookings import router as bookings_router
 
-app = FastAPI()
+app = FastAPI(
+    title="PMS Integration Service",
+    version="1.0.0",
+    description="Resiliently fetch bookings from PMS",
+    openapi_tags=[{"name": "bookings", "description": "Booking operations"}],
+)
 app.include_router(bookings_router)
 
 @app.get("/")
